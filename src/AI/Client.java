@@ -1,7 +1,5 @@
 package AI;
 
-import java.util.Random;
-
 import lenz.htw.yakip.ColorChange;
 import lenz.htw.yakip.net.NetworkClient;
 
@@ -19,6 +17,7 @@ public class Client implements Runnable {
 	 */
 	private int[][] board = new int[31][31];
 	private float[][][] tokens = new float[4][3][2];
+	private float[][][] directions = new float[4][3][2];
 	private NetworkClient network;
 	
 	
@@ -30,20 +29,31 @@ public class Client implements Runnable {
 	@Override
 	public void run() {
 		network = new NetworkClient(null, teamName);
-		Random rnd = new Random();
-		rnd.setSeed(123);
 		playerNum = network.getMyPlayerNumber();
         initWalls();
+        checkAllTokens();
+        colorChange();
+        initTokenAI();
 
-		while (network.isAlive()) {
-	        
-		    for (int i = 0; i < 3; ++i) {
-		        network.setMoveDirection(i, rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f);
-		        
-		        checkAllTokens();
-		        colorChange();
-		    }
+		while (network.isAlive()) { 	        
+	        checkAllTokens();
+	        colorChange();
+	        for (int i = 0; i < 3; i++) {
+	        	network.setMoveDirection(i, directions[this.playerNum][i][0], directions[this.playerNum][i][1]);
+	        }
 		}
+	}
+	
+	private void initTokenAI() {
+		TokenAI one = new TokenAI(playerNum, 0, board, tokens, directions);
+		TokenAI two = new TokenAI(playerNum, 1, board, tokens, directions);
+		TokenAI three = new TokenAI(playerNum, 2, board, tokens, directions);
+		Thread t_one = new Thread(one);
+		Thread t_two = new Thread(two);
+		Thread t_three = new Thread(three);
+		t_one.start();
+		t_two.start();
+		t_three.start();
 	}
 	
 	private void colorChange() {
