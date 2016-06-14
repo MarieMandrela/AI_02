@@ -45,11 +45,17 @@ public class LookaheadTokenAI extends TokenAI {
 				oneStepLookahead(xy);
 				directions[this.playerNum][this.tokenNum][0] = xy[0];
 				directions[this.playerNum][this.tokenNum][1] = xy[1];
-            	Thread.sleep(250);
+            	if (this.tokenNum == 1) {
+            		Thread.sleep(400);
+            	}
+				if (this.tokenNum == 2) {
+            		Thread.sleep(800);
+            	}
             	if (this.tokenNum == 0) {
+            		Thread.sleep(200);
 	            	directions[this.playerNum][this.tokenNum][0] = 0;
 					directions[this.playerNum][this.tokenNum][1] = 0;
-	            	Thread.sleep(250);
+	            	Thread.sleep(100);
             	}
     		} catch (InterruptedException e) {
     			e.printStackTrace();
@@ -59,39 +65,54 @@ public class LookaheadTokenAI extends TokenAI {
 	
 	private void oneStepLookahead(int[] xy) {
 		int best_score = Integer.MIN_VALUE;
-		int val, score;
+		int score;
 		
 		for (int i = 0; i < this.DIRNUM; i++) {
-			val = getBoard(getX() + this.dirs[i][0], getY() + this.dirs[i][1]);
-			score = evaluateField(val);
-			if (score > best_score ||
-				score == best_score && rnd.nextBoolean()) {
-				best_score = score;
-				xy[0] = this.dirs[i][0];
-				xy[1] = this.dirs[i][1];
+			if (movePossible(getX(), getY(), this.dirs[i][0], this.dirs[i][1])) {
+				score = evaluateField(getX() + this.dirs[i][0],  getY() + this.dirs[i][1]);
+				if (score > best_score ||
+					score == best_score && rnd.nextBoolean()) {
+					best_score = score;
+					xy[0] = this.dirs[i][0];
+					xy[1] = this.dirs[i][1];
+				}
 			}
 		}
 	}
 	
+	private boolean movePossible(float x, float y, float dirX, float dirY) {
+		if (moveDiagonal(dirX, dirY)) {
+			moveThroughWalls(x, y, dirX, dirY);
+		}
+		return true;
+	}
+	
+	private boolean moveThroughWalls(float x, float y, float dirX, float dirY) {
+		return getBoard(0, y + dirY) == Constants.WALL || getBoard(x + dirX, 0) == Constants.WALL;
+	}
+	
+	private boolean moveDiagonal(float dirX, float dirY) {
+		return dirX != 0 && dirY != 0;
+	}
+	
 	private int getBoard(float x, float y) {
-		
-		return board[(int)x][(int)y];
+		return this.board[(int)x][(int)y];
 	}
 	
 	private float getX() {
-		return tokens[this.playerNum][this.tokenNum][0];
+		return this.tokens[this.playerNum][this.tokenNum][0];
 	}
 	
 	private float getY() {
-		return tokens[this.playerNum][this.tokenNum][1];
+		return this.tokens[this.playerNum][this.tokenNum][1];
 	}
 	
 	/**
 	 * Evaluate how good its is to step on the given field.
 	 * Prefer painting over enemy color > empty > my color > wall
-	 * @param val	
 	 */
-	private int evaluateField(int val) {
+	private int evaluateField(float x, float y) {
+		int val = getBoard(x, y);
 		if (val == Constants.WALL) {
 			return 0;
 		}

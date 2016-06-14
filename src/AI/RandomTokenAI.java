@@ -28,11 +28,18 @@ public class RandomTokenAI extends TokenAI {
 			try {
 				directions[this.playerNum][this.tokenNum][0] = rnd.nextFloat() - 0.5f;
 				directions[this.playerNum][this.tokenNum][1] = rnd.nextFloat() - 0.5f;
-            	Thread.sleep(250);
+
+            	if (this.tokenNum == 1) {
+            		Thread.sleep(400);
+            	}
+				if (this.tokenNum == 2) {
+            		Thread.sleep(800);
+            	}
             	if (this.tokenNum == 0) {
+            		Thread.sleep(200);
 	            	directions[this.playerNum][this.tokenNum][0] = 0;
 					directions[this.playerNum][this.tokenNum][1] = 0;
-	            	Thread.sleep(250);
+	            	Thread.sleep(100);
             	}
     		} catch (InterruptedException e) {
     			e.printStackTrace();
