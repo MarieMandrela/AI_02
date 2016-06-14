@@ -73,16 +73,17 @@ public class LookaheadTokenAI extends TokenAI {
 		}
 	}
 	
-	private int getBoard(int x, int y) {
-		return board[x][y];
+	private int getBoard(float x, float y) {
+		
+		return board[(int)x][(int)y];
 	}
 	
-	private int getX() {
-		return (int) tokens[this.playerNum][this.tokenNum][0];
+	private float getX() {
+		return tokens[this.playerNum][this.tokenNum][0];
 	}
 	
-	private int getY() {
-		return (int) tokens[this.playerNum][this.tokenNum][1];
+	private float getY() {
+		return tokens[this.playerNum][this.tokenNum][1];
 	}
 	
 	/**

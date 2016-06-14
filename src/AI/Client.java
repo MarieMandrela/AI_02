@@ -4,12 +4,13 @@ import lenz.htw.yakip.ColorChange;
 import lenz.htw.yakip.net.NetworkClient;
 
 public class Client implements Runnable {
-
+	
 	private String teamName;
 	private int playerNum;
 	
 	private String[] ais;
 	
+	private int[] scores = new int[4];
 	private int[][] board = new int[31][31];
 	private float[][][] tokens = new float[4][3][2];
 	private float[][][] directions = new float[4][3][2];
@@ -53,15 +54,21 @@ public class Client implements Runnable {
 	
 	private void colorChange() {
 		ColorChange cc;
+		int oldColor;
         while ((cc = network.getNextColorChange()) != null) {
-            board[cc.x][cc.y] = cc.newColor;
+        	oldColor = this.board[cc.x][cc.y];
+        	if (oldColor >= 0 && oldColor <= 3) {
+        		this.scores[oldColor]--;
+        	}
+        	this.scores[cc.newColor]++;
+            this.board[cc.x][cc.y] = cc.newColor;
         }
 	}
 	
 	private void initWalls() {
         for (int x = 0; x < 31; ++x) {
         	for (int y = 0; y < 31; ++y) {
-        		board[x][y] = network.isWall(x, y) ? Constants.WALL : Constants.EMPTY;
+        		this.board[x][y] = this.network.isWall(x, y) ? Constants.WALL : Constants.EMPTY;
         	}
         }
 	}
@@ -69,8 +76,8 @@ public class Client implements Runnable {
 	private void checkAllTokens() {
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 3; ++j) {
-				tokens[i][j][0] = network.getX(i, j);
-				tokens[i][j][1] = network.getY(i, j);
+				this.tokens[i][j][0] = this.network.getX(i, j);
+				this.tokens[i][j][1] = this.network.getY(i, j);
 			}
 		}
 	}
