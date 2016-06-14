@@ -3,6 +3,7 @@ package main;
 import java.io.IOException;
 
 import AI.Client;
+import AI.Constants;
 
 public class Application {
 
@@ -14,10 +15,12 @@ public class Application {
 	public static class ClientRunner {
 		
 		public static void runClients () throws InterruptedException {
-			Client one = new Client("one");
-			Client two = new Client("two");
-			Client three = new Client("three");
-			Client four = new Client("four");
+			String[] random = {Constants.RNG, Constants.RNG, Constants.RNG};
+			String[] lookahead = {Constants.LOOK, Constants.LOOK, Constants.LOOK};
+			Client one = new Client("one", random);
+			Client two = new Client("two", random);
+			Client three = new Client("three", random);
+			Client four = new Client("lookahead", lookahead);
 			
 			Thread t_one = new Thread(one);
 			Thread t_two = new Thread(two);

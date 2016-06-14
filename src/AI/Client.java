@@ -7,23 +7,18 @@ public class Client implements Runnable {
 
 	private String teamName;
 	private int playerNum;
-	/**
-	 * -1 = empty field
-	 * -2 = wall
-	 *  0 = colored by player zero
-	 *  1 = colored by player one
-	 *  2 = colored by player two
-	 *  3 = colored by player three
-	 */
+	
+	private String[] ais;
+	
 	private int[][] board = new int[31][31];
 	private float[][][] tokens = new float[4][3][2];
 	private float[][][] directions = new float[4][3][2];
 	private NetworkClient network;
 	
-	
-	public Client(String teamName) {
+	public Client(String teamName, String[] ais) {
 		super();
 		this.teamName = teamName;
+		this.ais = ais;
 	}
 
 	@Override
@@ -45,9 +40,9 @@ public class Client implements Runnable {
 	}
 	
 	private void initTokenAI() {
-		TokenAI one = new TokenAI(playerNum, 0, board, tokens, directions);
-		TokenAI two = new TokenAI(playerNum, 1, board, tokens, directions);
-		TokenAI three = new TokenAI(playerNum, 2, board, tokens, directions);
+		TokenAI one = TokenAI.getTokenAI(this.ais[0], playerNum, 0, board, tokens, directions);
+		TokenAI two = TokenAI.getTokenAI(this.ais[1], playerNum, 1, board, tokens, directions);
+		TokenAI three =  TokenAI.getTokenAI(this.ais[2], playerNum, 2, board, tokens, directions);
 		Thread t_one = new Thread(one);
 		Thread t_two = new Thread(two);
 		Thread t_three = new Thread(three);
@@ -66,7 +61,7 @@ public class Client implements Runnable {
 	private void initWalls() {
         for (int x = 0; x < 31; ++x) {
         	for (int y = 0; y < 31; ++y) {
-        		board[x][y] = network.isWall(x, y) ? -2 : -1;
+        		board[x][y] = network.isWall(x, y) ? Constants.WALL : Constants.EMPTY;
         	}
         }
 	}
