@@ -13,7 +13,7 @@ public class Client implements Runnable {
 	private int[] scores = new int[4];
 	private int[][] board = new int[31][31];
 	private float[][][] tokens = new float[4][3][2];
-	private float[][][] directions = new float[4][3][2];
+	private float[][] directions = new float[3][2];
 	private NetworkClient network;
 	
 	public Client(String teamName, String[] ais) {
@@ -35,7 +35,7 @@ public class Client implements Runnable {
 	        checkAllTokens();
 	        colorChange();
 	        for (int i = 0; i < 3; i++) {
-	        	network.setMoveDirection(i, directions[this.playerNum][i][0], directions[this.playerNum][i][1]);
+	        	network.setMoveDirection(i, directions[i][0], directions[i][1]);
 	        }
 		}
 	}

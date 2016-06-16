@@ -2,7 +2,7 @@ package AI;
 
 public abstract class TokenAI implements Runnable{
 	
-	public static TokenAI getTokenAI(String type, int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][][] directions, int[] scores) {
+	public static TokenAI getTokenAI(String type, int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions, int[] scores) {
 		if (type == null) {
 			return null;
 		}

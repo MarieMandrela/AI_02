@@ -9,9 +9,9 @@ public class RandomTokenAI extends TokenAI {
 	private int[] scores = new int[4];
 	volatile int[][] board = new int[31][31];
 	volatile float[][][] tokens = new float[4][3][2];
-	volatile float[][][] directions = new float[4][3][2];
+	volatile float[][] directions = new float[3][2];
 	
-	public RandomTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][][] directions, int[] scores) {
+	public RandomTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions, int[] scores) {
 		super();
 		this.playerNum = playerNum;
 		this.tokenNum = tokenNum;
@@ -28,8 +28,8 @@ public class RandomTokenAI extends TokenAI {
 		
 		while (true) {		
 			try {
-				directions[this.playerNum][this.tokenNum][0] = rnd.nextFloat() - 0.5f;
-				directions[this.playerNum][this.tokenNum][1] = rnd.nextFloat() - 0.5f;
+				directions[this.tokenNum][0] = rnd.nextFloat() - 0.5f;
+				directions[this.tokenNum][1] = rnd.nextFloat() - 0.5f;
 
             	if (this.tokenNum == 1) {
             		Thread.sleep(400);
@@ -39,8 +39,8 @@ public class RandomTokenAI extends TokenAI {
             	}
             	if (this.tokenNum == 0) {
             		Thread.sleep(200);
-	            	directions[this.playerNum][this.tokenNum][0] = 0;
-					directions[this.playerNum][this.tokenNum][1] = 0;
+	            	directions[this.tokenNum][0] = 0;
+					directions[this.tokenNum][1] = 0;
 	            	Thread.sleep(100);
             	}
     		} catch (InterruptedException e) {

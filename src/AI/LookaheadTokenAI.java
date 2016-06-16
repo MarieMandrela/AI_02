@@ -22,17 +22,18 @@ public class LookaheadTokenAI extends TokenAI {
 	volatile private int[] scores = new int[4];
 	volatile int[][] board = new int[31][31];
 	volatile float[][][] tokens = new float[4][3][2];
-	volatile float[][][] directions = new float[4][3][2];
+	volatile float[][] directions = new float[3][2];
 	
 	Random rnd;
 	
-	public LookaheadTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][][] directions, int[] scores) {
+	public LookaheadTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions, int[] scores) {
 		super();
 		this.playerNum = playerNum;
 		this.tokenNum = tokenNum;
 		this.board = board;
 		this.tokens = tokens;
 		this.directions = directions;
+		this.scores = scores;
 		this.rnd = new Random();
 		this.rnd.setSeed(playerNum + tokenNum);
 	}
@@ -44,8 +45,8 @@ public class LookaheadTokenAI extends TokenAI {
 		while (true) {		
 			try {
 				oneStepLookahead(xy);
-				directions[this.playerNum][this.tokenNum][0] = xy[0];
-				directions[this.playerNum][this.tokenNum][1] = xy[1];
+				directions[this.tokenNum][0] = xy[0];
+				directions[this.tokenNum][1] = xy[1];
             	if (this.tokenNum == 1) {
             		Thread.sleep(400);
             	}
@@ -54,8 +55,8 @@ public class LookaheadTokenAI extends TokenAI {
             	}
             	if (this.tokenNum == 0) {
             		Thread.sleep(150);
-	            	directions[this.playerNum][this.tokenNum][0] = 0;
-					directions[this.playerNum][this.tokenNum][1] = 0;
+	            	directions[this.tokenNum][0] = 0;
+					directions[this.tokenNum][1] = 0;
 	            	Thread.sleep(100);
             	}
     		} catch (InterruptedException e) {
@@ -99,7 +100,11 @@ public class LookaheadTokenAI extends TokenAI {
 	}
 	
 	private int getBoard(float x, float y) {
-		return this.board[(int)x][(int)y];
+		return this.board[limit(x)][limit(y)];
+	}
+	
+	private int limit(float value) {
+	    return (int)Math.max(0, Math.min(value, 31));
 	}
 	
 	private float getX() {
@@ -115,21 +120,47 @@ public class LookaheadTokenAI extends TokenAI {
 		xy[1] = yTo - yFrom;
 	}
 	
+	private boolean fieldOccupied(float x, float y) {
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 3; j++) {
+				if (i == this.playerNum && j == this.tokenNum) {
+					continue;
+				}
+				
+				if ((int)this.tokens[i][j][0] == (int)x  &&
+				    (int)this.tokens[i][j][1] == (int)y) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	/**
 	 * Evaluate how good its is to step on the given field.
 	 * Prefer painting over enemy color > empty > my color > wall
+	 * Try to avoid running into other tokens
 	 */
 	private int evaluateField(float x, float y) {
-		int val = getBoard(x, y);
-		if (val == Constants.WALL) {
+		int field = getBoard(x, y);
+		
+		if (field == Constants.WALL) {
 			return 0;
 		}
-		if (val == this.playerNum) {
+		if (field == this.playerNum) {
 			return 1;
 		}
-		if (val == Constants.EMPTY) {
+		if (fieldOccupied(x, y)) {
 			return 2;
 		}
-		return 3;
+		if (field == Constants.EMPTY) {
+			return 3;
+		}
+		if (field >= 0 && field <= 3) {
+			return this.scores[field];
+		}
+		
+		return 0;
 	}
 }
