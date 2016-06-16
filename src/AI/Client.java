@@ -41,9 +41,9 @@ public class Client implements Runnable {
 	}
 	
 	private void initTokenAI() {
-		TokenAI one = TokenAI.getTokenAI(this.ais[0], playerNum, 0, board, tokens, directions);
-		TokenAI two = TokenAI.getTokenAI(this.ais[1], playerNum, 1, board, tokens, directions);
-		TokenAI three =  TokenAI.getTokenAI(this.ais[2], playerNum, 2, board, tokens, directions);
+		TokenAI one = TokenAI.getTokenAI(this.ais[0], playerNum, 0, board, tokens, directions, scores);
+		TokenAI two = TokenAI.getTokenAI(this.ais[1], playerNum, 1, board, tokens, directions, scores);
+		TokenAI three =  TokenAI.getTokenAI(this.ais[2], playerNum, 2, board, tokens, directions, scores);
 		Thread t_one = new Thread(one);
 		Thread t_two = new Thread(two);
 		Thread t_three = new Thread(three);

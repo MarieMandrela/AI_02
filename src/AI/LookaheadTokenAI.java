@@ -19,13 +19,14 @@ public class LookaheadTokenAI extends TokenAI {
 	
 	private int playerNum;
 	private int tokenNum;
+	volatile private int[] scores = new int[4];
 	volatile int[][] board = new int[31][31];
 	volatile float[][][] tokens = new float[4][3][2];
 	volatile float[][][] directions = new float[4][3][2];
 	
 	Random rnd;
 	
-	public LookaheadTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][][] directions) {
+	public LookaheadTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][][] directions, int[] scores) {
 		super();
 		this.playerNum = playerNum;
 		this.tokenNum = tokenNum;
@@ -38,7 +39,7 @@ public class LookaheadTokenAI extends TokenAI {
 
 	@Override
 	public void run() {
-		int[] xy = new int[2];
+		float[] xy = new float[2];
 		
 		while (true) {		
 			try {
@@ -52,7 +53,7 @@ public class LookaheadTokenAI extends TokenAI {
             		Thread.sleep(800);
             	}
             	if (this.tokenNum == 0) {
-            		Thread.sleep(200);
+            		Thread.sleep(150);
 	            	directions[this.playerNum][this.tokenNum][0] = 0;
 					directions[this.playerNum][this.tokenNum][1] = 0;
 	            	Thread.sleep(100);
@@ -63,18 +64,20 @@ public class LookaheadTokenAI extends TokenAI {
 		}
 	}
 	
-	private void oneStepLookahead(int[] xy) {
+	private void oneStepLookahead(float[] xy) {
 		int best_score = Integer.MIN_VALUE;
 		int score;
+		float xTo, yTo;
 		
 		for (int i = 0; i < this.DIRNUM; i++) {
 			if (movePossible(getX(), getY(), this.dirs[i][0], this.dirs[i][1])) {
-				score = evaluateField(getX() + this.dirs[i][0],  getY() + this.dirs[i][1]);
+				xTo = getX() + this.dirs[i][0];
+				yTo = getY() + this.dirs[i][1];
+				score = evaluateField(xTo, yTo);
 				if (score > best_score ||
 					score == best_score && rnd.nextBoolean()) {
 					best_score = score;
-					xy[0] = this.dirs[i][0];
-					xy[1] = this.dirs[i][1];
+					getDir(xy, getX(), getY(), xTo, yTo);
 				}
 			}
 		}
@@ -82,13 +85,13 @@ public class LookaheadTokenAI extends TokenAI {
 	
 	private boolean movePossible(float x, float y, float dirX, float dirY) {
 		if (moveDiagonal(dirX, dirY)) {
-			moveThroughWalls(x, y, dirX, dirY);
+			return !moveThroughWalls(x, y, dirX, dirY);
 		}
 		return true;
 	}
 	
 	private boolean moveThroughWalls(float x, float y, float dirX, float dirY) {
-		return getBoard(0, y + dirY) == Constants.WALL || getBoard(x + dirX, 0) == Constants.WALL;
+		return getBoard(x + 0, y + dirY) == Constants.WALL || getBoard(x + dirX, y + 0) == Constants.WALL;
 	}
 	
 	private boolean moveDiagonal(float dirX, float dirY) {
@@ -105,6 +108,11 @@ public class LookaheadTokenAI extends TokenAI {
 	
 	private float getY() {
 		return this.tokens[this.playerNum][this.tokenNum][1];
+	}
+	
+	private void getDir(float[] xy, float xFrom, float yFrom, float xTo, float yTo) {
+		xy[0] = xTo - xFrom;
+		xy[1] = yTo - yFrom;
 	}
 	
 	/**
