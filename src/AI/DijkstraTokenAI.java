@@ -2,10 +2,11 @@ package AI;
 
 import java.util.Random;
 
-public class LookaheadTokenAI extends TokenAI {
-	
+public class DijkstraTokenAI extends TokenAI {
+
 	private int DIRNUM = 8;
-	private int[][] DIRS = {
+	
+	private int[][] dirs = {
 		{0, 1}, 
 		{1, 1}, 
 		{1, 0},
@@ -22,11 +23,10 @@ public class LookaheadTokenAI extends TokenAI {
 	volatile int[][] board = new int[31][31];
 	volatile float[][][] tokens = new float[4][3][2];
 	volatile float[][] directions = new float[3][2];
-	boolean[][][][] adjacency = new boolean[31][31][31][31];
 	
 	Random rnd;
 	
-	public LookaheadTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions, int[] scores, boolean[][][][] adjacency) {
+	public DijkstraTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions, int[] scores) {
 		super();
 		this.playerNum = playerNum;
 		this.tokenNum = tokenNum;
@@ -34,7 +34,6 @@ public class LookaheadTokenAI extends TokenAI {
 		this.tokens = tokens;
 		this.directions = directions;
 		this.scores = scores;
-		this.adjacency = adjacency;
 		this.rnd = new Random();
 		this.rnd.setSeed(playerNum + tokenNum);
 	}
@@ -72,9 +71,9 @@ public class LookaheadTokenAI extends TokenAI {
 		float xTo, yTo;
 		
 		for (int i = 0; i < this.DIRNUM; i++) {
-			if (movePossible(this.DIRS[i][0], this.DIRS[i][1])) {
-				xTo = getX() + this.DIRS[i][0];
-				yTo = getY() + this.DIRS[i][1];
+			if (movePossible(getX(), getY(), this.dirs[i][0], this.dirs[i][1])) {
+				xTo = getX() + this.dirs[i][0];
+				yTo = getY() + this.dirs[i][1];
 				score = evaluateField(xTo, yTo);
 				if (score > best_score ||
 					score == best_score && rnd.nextBoolean()) {
@@ -85,8 +84,35 @@ public class LookaheadTokenAI extends TokenAI {
 		}
 	}
 	
-	private boolean movePossible(int dirX, int dirY) {
-		return adjacency[limit(getX())][limit(getY())][limit(getX() + dirX)][limit(getY() + dirY)];
+	private void dijkstra(float[] xy) {
+		int x = limit(getX());
+		int y = limit(getY());
+		
+		int[][] distances = new int[31][31];
+		boolean[][] shortestPath = new boolean[31][31];
+		for (int i = 0; i < 31; i++) {
+			for (int j = 0; j < 31; j++) {
+				distances[i][j] = Integer.MAX_VALUE;
+				shortestPath[i][j] = false;
+			}
+		}
+		distances[x][y] = 0;
+		
+	}
+	
+	private boolean movePossible(float x, float y, float dirX, float dirY) {
+		if (moveDiagonal(dirX, dirY)) {
+			return !moveThroughWalls(x, y, dirX, dirY);
+		}
+		return true;
+	}
+	
+	private boolean moveThroughWalls(float x, float y, float dirX, float dirY) {
+		return getBoard(x + 0, y + dirY) == Constants.WALL || getBoard(x + dirX, y + 0) == Constants.WALL;
+	}
+	
+	private boolean moveDiagonal(float dirX, float dirY) {
+		return dirX != 0 && dirY != 0;
 	}
 	
 	private int getBoard(float x, float y) {

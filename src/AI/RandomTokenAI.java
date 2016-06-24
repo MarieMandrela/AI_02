@@ -6,19 +6,17 @@ public class RandomTokenAI extends TokenAI {
 
 	private int playerNum;
 	private int tokenNum;
-	private int[] scores = new int[4];
 	volatile int[][] board = new int[31][31];
 	volatile float[][][] tokens = new float[4][3][2];
 	volatile float[][] directions = new float[3][2];
 	
-	public RandomTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions, int[] scores) {
+	public RandomTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions) {
 		super();
 		this.playerNum = playerNum;
 		this.tokenNum = tokenNum;
 		this.board = board;
 		this.tokens = tokens;
 		this.directions = directions;
-		this.scores = scores;
 	}
 
 	@Override
