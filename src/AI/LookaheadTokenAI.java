@@ -4,18 +4,6 @@ import java.util.Random;
 
 public class LookaheadTokenAI extends TokenAI {
 	
-	private int DIRNUM = 8;
-	private int[][] DIRS = {
-		{0, 1}, 
-		{1, 1}, 
-		{1, 0},
-		{1, -1},
-		{0, -1},
-		{-1, -1},
-		{-1, 0},
-		{-1, 1}
-	};
-	
 	private int playerNum;
 	private int tokenNum;
 	volatile private int[] scores = new int[4];
@@ -71,10 +59,10 @@ public class LookaheadTokenAI extends TokenAI {
 		int score;
 		float xTo, yTo;
 		
-		for (int i = 0; i < this.DIRNUM; i++) {
-			if (movePossible(this.DIRS[i][0], this.DIRS[i][1])) {
-				xTo = getX() + this.DIRS[i][0];
-				yTo = getY() + this.DIRS[i][1];
+		for (int i = 0; i < Constants.DIRNUM; i++) {
+			if (movePossible(Constants.DIRS[i][0], Constants.DIRS[i][1])) {
+				xTo = getX() + Constants.DIRS[i][0];
+				yTo = getY() + Constants.DIRS[i][1];
 				score = evaluateField(xTo, yTo);
 				if (score > best_score ||
 					score == best_score && rnd.nextBoolean()) {

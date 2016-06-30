@@ -13,6 +13,9 @@ public abstract class TokenAI implements Runnable{
 		if (type.equalsIgnoreCase(Constants.LOOK)) {
 			return new LookaheadTokenAI(playerNum, tokenNum, board, tokens, directions, scores, adjacency);
 		}
+		if (type.equalsIgnoreCase(Constants.DIJK)) {
+			return new DijkstraTokenAI(playerNum, tokenNum, board, tokens, directions, scores, adjacency);
+		}
 		
 		return null;
 	}
