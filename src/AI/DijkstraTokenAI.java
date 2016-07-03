@@ -38,37 +38,18 @@ public class DijkstraTokenAI extends TokenAI {
 		setValues();
 	}
 	
-	// TODO improve finding non reachable fields
-	// maybe update if dijkstra doesnt find way
-	private void initReachable() {
-		for (int i = 0; i < Constants.DIM; i++) {
-			for (int j = 0; j < Constants.DIM; j++) {
-				if (i == 0 || i == Constants.DIM - 1 ||
-					j == 0 || j == Constants.DIM -1 ) {
-					this.reachable[i][j] = false;
-				} else if (getBoard(i, j) == Constants.WALL) {
-					this.reachable[i][j] = false;
-				} else {
-					this.reachable[i][j] = true;
-				}
-				
-				
-			}
-		}
-	}
-	
 	private void initInfluence() {
 		for (int i = 0; i < Constants.DIM; i++) {
 			for (int j = 0; j < Constants.DIM; j++) {
 				float field = getBoard(i, j);
-				if (field == Constants.WALL) {
+				if (!this.reachable[i][j]) {
 					this.influence[i][j] = Float.MIN_VALUE;
 				} else if (field == this.playerNum) {
-					this.influence[i][j] = -2;
+					this.influence[i][j] = -1;
 				} else if (field >= 0 && field <= 3) {
-					this.influence[i][j] = 1;
-				} else {
 					this.influence[i][j] = 0;
+				} else {
+					this.influence[i][j] = 1;
 				}
 			}
 		}
@@ -86,16 +67,16 @@ public class DijkstraTokenAI extends TokenAI {
 		for (int i = 0; i < Constants.DIM; i++) {
 			for (int j = 0; j < Constants.DIM; j++) {
 				float field = getBoard(i, j);
-				if (field == Constants.WALL) {
+				if (!this.reachable[i][j]) {
 					continue;
-				} 
+				}
 				
 				if (field == this.playerNum) {
 					newVal = -1;
 				} else if (field >= 0 && field <= 3) {
-					newVal = 1;
-				} else {
 					newVal = 0;
+				} else {
+					newVal = 1;
 				}
 				
 				this.influence[i][j] = this.gamma * this.influence[i][j] + (1 - this.gamma) * newVal;
@@ -192,7 +173,53 @@ public class DijkstraTokenAI extends TokenAI {
 		getDir(vector, x, y, dir[0], dir[1]);
 	}
 	
-	public void dijkstra(int x, int y, int toX, int toY, int[] dir) {
+	private void initReachable() {
+		boolean[][] visited = new boolean[Constants.DIM][Constants.DIM];
+		float[][] distances = new float[Constants.DIM][Constants.DIM];
+		
+		for (int i = 0; i < Constants.DIM; i++) {
+			for (int j = 0; j < Constants.DIM; j++) {
+				this.reachable[i][j] = false;
+				distances[i][j] = Float.MAX_VALUE;
+			}
+		}
+		
+		int currentX = (int) this.tokens[this.playerNum][this.tokenNum][0];
+		int currentY = (int) this.tokens[this.playerNum][this.tokenNum][1];
+		this.reachable[currentX][currentY] = true;
+		distances[currentX][currentY] = 0;
+		float min = 0;
+		
+		while (min != Float.MAX_VALUE) {
+			min = Float.MAX_VALUE;
+			
+			for (int i = 0; i < Constants.DIM; i++) {
+				for (int j = 0; j < Constants.DIM; j++) {
+					float tentativeDistance = distances[currentX][currentY] + 1;
+					if (this.adjacency[currentX][currentY][i][j]&& 
+							!visited[i][j] && 
+							tentativeDistance < distances[i][j]) {
+						distances[i][j] = tentativeDistance;
+					}
+				}
+			}
+			
+			this.reachable[currentX][currentY] = true;
+
+			for (int i = 0; i < Constants.DIM; i++) {
+				for (int j = 0; j < Constants.DIM; j++) {
+					if (!this.reachable[i][j] && distances[i][j] <= min) {
+						min = distances[i][j];
+						currentX = i;
+						currentY = j;
+					}
+				}
+			}
+			
+		}
+	}
+	
+	private void dijkstra(int x, int y, int toX, int toY, int[] dir) {
 		
 		boolean[][] visited = new boolean[Constants.DIM][Constants.DIM];
 		float[][] distances = new float[Constants.DIM][Constants.DIM];
