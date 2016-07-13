@@ -2,6 +2,8 @@ package AI;
 
 import java.util.Random;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+
 public class DijkstraTokenAI extends TokenAI {
 	
 	private int playerNum;
@@ -10,9 +12,12 @@ public class DijkstraTokenAI extends TokenAI {
 	private boolean[][][][] adjacency = new boolean[Constants.DIM][Constants.DIM][Constants.DIM][Constants.DIM];
 	private float[][] influence = new float[Constants.DIM][Constants.DIM];
 	private float[][] half_infuence = new float[Constants.DIM / 2][Constants.DIM / 2];
-	private float gamma = 0.00001f;
+	private long targetUpdateRate = 5000;
 	private float[][] value = new float[Constants.DIM][Constants.DIM];
 	private boolean[][] reachable = new boolean[Constants.DIM][Constants.DIM];
+	
+	private long gameStart;
+	private long startegySwitchTime = 30000;
 	
 	private Random rnd;
 	
@@ -20,9 +25,11 @@ public class DijkstraTokenAI extends TokenAI {
 	volatile int[][] board = new int[Constants.DIM][Constants.DIM];
 	volatile float[][][] tokens = new float[4][3][2];
 	volatile float[][] directions = new float[3][2];
+	volatile int[][] targets = new int[3][2];
 	
 	
-	public DijkstraTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, float[][] directions, int[] scores, boolean[][][][] adjacency) {
+	public DijkstraTokenAI(int playerNum, int tokenNum, int[][] board, float[][][] tokens, 
+			float[][] directions, int[] scores, boolean[][][][] adjacency, int[][] targets) {
 		super();
 		this.playerNum = playerNum;
 		this.tokenNum = tokenNum;
@@ -31,8 +38,9 @@ public class DijkstraTokenAI extends TokenAI {
 		this.directions = directions;
 		this.scores = scores;
 		this.adjacency = adjacency;
+		this.targets = targets;
 		this.rnd = new Random();
-		this.rnd.setSeed(playerNum + tokenNum);
+		this.rnd.setSeed(10);
 		
 		initReachable();
 		setInfluence();
@@ -41,6 +49,7 @@ public class DijkstraTokenAI extends TokenAI {
 	
 	private void setInfluence() {
 		float newVal = 0;
+		float enemyFieldVal = System.currentTimeMillis() - this.gameStart < this.startegySwitchTime ? 1 : 2;
 		
 		for (int i = 0; i < Constants.DIM; i++) {
 			for (int j = 0; j < Constants.DIM; j++) {
@@ -51,7 +60,7 @@ public class DijkstraTokenAI extends TokenAI {
 				else if (field == this.playerNum) {
 					newVal = -1;
 				} else if (field >= 0 && field <= 3) {
-					newVal = 1;
+					newVal = enemyFieldVal;
 				} else if (field == Constants.EMPTY) {
 					newVal = 1;
 				}
@@ -60,18 +69,22 @@ public class DijkstraTokenAI extends TokenAI {
 			}
 		}
 		
+		// Avoid other tokens
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 3; j++) {
 				if (this.tokenNum == j) {
 					continue;
 				}
-				
-				applyTokenInfluence((int)this.tokens[i][j][0], (int)this.tokens[i][j][1]);
-				
-				if (i == this.playerNum) {
-					applyTokenInfluence((int)this.tokens[i][j][0], (int)this.tokens[i][j][1]);
-				}
+				applyGaussInfluence((int)getX(i, j), (int)getY(i, j));
 			}
+		}
+		
+		// Avoid the targets of allied tokens
+		for (int i = 0; i < 3; i++) {
+			if (this.tokenNum == i) {
+				continue;
+			}
+			applyGaussInfluence(getTargetX(i), getTargetY(i));
 		}
 		
 		for (int i = 0; i < Constants.DIM - 1; i++) {
@@ -89,20 +102,19 @@ public class DijkstraTokenAI extends TokenAI {
 		}
 	}
 	
-	private void applyTokenInfluence(int x, int y) {
-		int half = (int)(Constants.GAUSSSIZE / 2);
-		int new_x, new_y;
-		float newVal;
+	private void applyGaussInfluence(int x, int y) {
+		int gaussRadius = (int)(Constants.GAUSSSIZE / 2);
+		int gaussX, gaussY;
+		float gauss;
 		
-		for (int i = -half; i <= half; i++) {
-			for (int j = -half; j <= half; j++) {
-				new_x = x + i;
-				new_y = y + j;
-				if (new_x >= 0 && new_x < Constants.DIM &&
-					new_y >= 0 && new_y < Constants.DIM &&
-					getBoard(new_x, new_y) != Constants.WALL) {
-					newVal = Constants.GAUSS[half + i][half + j];
-					this.influence[new_x][new_y] = this.influence[new_x][new_y] - newVal;
+		for (int i = -gaussRadius; i <= gaussRadius; i++) {
+			for (int j = -gaussRadius; j <= gaussRadius; j++) {
+				gaussX = x + i;
+				gaussY = y + j;
+				if (inLimit(gaussX, gaussY) &&
+					getBoard(gaussX, gaussY) != Constants.WALL) {
+					gauss = Constants.GAUSS[gaussRadius + i][gaussRadius + j];
+					this.influence[gaussX][gaussY] = this.influence[gaussX][gaussY] - gauss;
 				}
 			}
 		}
@@ -115,48 +127,85 @@ public class DijkstraTokenAI extends TokenAI {
 			}
 		}
 	}
-
-	@Override
-	public void run() {
-		int[] goal = new int[2];
-		float[] dir = new float[2];
-		int timeCounter = 5000;
-		int updateRate = 5000;
-		
-		while (true) {		
-			try {
-				if (timeCounter >= updateRate ||
-					(this.tokens[this.playerNum][this.tokenNum][0] == goal[0] &&
-					 this.tokens[this.playerNum][this.tokenNum][1] == goal[1])) {
-					getTarget(goal);
-					timeCounter = 0;
-				}
-				
-				goSomewhere(limit(getX()), limit(getY()), goal[0], goal[1], dir);
-				directions[this.tokenNum][0] = dir[0];
-				directions[this.tokenNum][1] = dir[1];
-            	if (this.tokenNum == 1) {
-            		Thread.sleep(400);
-            		timeCounter += 400;
-            	}
-				if (this.tokenNum == 2) {
-            		Thread.sleep(800);
-            		timeCounter += 800;
-            	}
-            	if (this.tokenNum == 0) {
-            		Thread.sleep(150);
-	            	directions[this.tokenNum][0] = 0;
-					directions[this.tokenNum][1] = 0;
-	            	Thread.sleep(100);
-	            	timeCounter += 250;
-            	}
-    		} catch (InterruptedException e) {
-    			e.printStackTrace();
-    		}
+	
+	private void setGameTimer() {
+		if (gameStart == 0 && scores[0] > 0) {
+			gameStart = System.currentTimeMillis();
 		}
 	}
 	
-	private void getTarget(int[] xy) {
+	private void sleep() {
+		try {
+			if (this.tokenNum == 1) {
+				Thread.sleep(400);
+	    	}
+			if (this.tokenNum == 2) {
+				Thread.sleep(800);
+	    	}
+	    	if (this.tokenNum == 0) {
+	    		Thread.sleep(150);
+	    		setDirections(0, 0);
+	    		Thread.sleep(100);
+	    	}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void run() {
+		float[] dir = new float[2];
+		int[] target = new int[2];
+		long lastTarget = 0;
+		
+		while (true) {
+			setGameTimer();
+
+			if (System.currentTimeMillis() - lastTarget >= this.targetUpdateRate ||	hitTarget()) {
+				findTarget(target);
+				setTarget(target[0], target[1]);
+				System.out.println("Token " + this.tokenNum + " going to " + target[0] + "," + target[1]);
+				lastTarget = System.currentTimeMillis();
+			}
+				
+			findDirVector(limit(getX()), limit(getY()), target[0], target[1], dir);
+			setDirections(dir[0], dir[1]);
+			
+			sleep();
+		}
+	}
+	
+	private void setDirections(float x, float y) {
+		directions[this.tokenNum][0] = x;
+		directions[this.tokenNum][1] = y;
+	}
+	
+	private void setTarget(int x, int y) {
+		this.targets[this.tokenNum][0] = x;
+		this.targets[this.tokenNum][1] = x;
+	}
+	
+	private int getTargetX(int tokenNum) {
+		return this.targets[tokenNum][0];
+	}
+	
+	private int getTargetX() {
+		return this.targets[this.tokenNum][0];
+	}
+	
+	private int getTargetY(int tokenNum) {
+		return this.targets[tokenNum][1];
+	}
+	
+	private int getTargetY() {
+		return this.targets[this.tokenNum][1];
+	}
+	
+	private boolean hitTarget() {
+		return (Math.abs(getTargetX() - getX()) + Math.abs(getTargetY() - getY())) < 3;
+	}
+	
+	private void findTarget(int[] xy) {
 		setInfluence();
 		getMaxInfluence(xy);
 	}
@@ -188,7 +237,7 @@ public class DijkstraTokenAI extends TokenAI {
 		}
 	}
 	
-	private void goSomewhere(int x, int y, int toX, int toY, float[] vector) {
+	private void findDirVector(int x, int y, int toX, int toY, float[] vector) {
 		int[] dir = {-1,-1};
 		setValues();
 		dijkstra(x, y, toX, toY, dir);
@@ -206,8 +255,8 @@ public class DijkstraTokenAI extends TokenAI {
 			}
 		}
 		
-		int currentX = (int) this.tokens[this.playerNum][this.tokenNum][0];
-		int currentY = (int) this.tokens[this.playerNum][this.tokenNum][1];
+		int currentX = (int) getX();
+		int currentY = (int) getY();
 		this.reachable[currentX][currentY] = true;
 		distances[currentX][currentY] = 0;
 		float min = 0;
@@ -308,9 +357,8 @@ public class DijkstraTokenAI extends TokenAI {
 		int i = toX;
 		int j = toY;
 		
-		while ( i >= 0 && i < Constants.DIM &&
-				j >= 0 && j < Constants.DIM &&
-				!(previous[i][j][0] == x && previous[i][j][1] == y)) {
+		while (inLimit(i, j) &&
+			   !(previous[i][j][0] == x && previous[i][j][1] == y)) {
 			int new_i = previous[i][j][0];
 			int new_j = previous[i][j][1];
 			i = new_i;
@@ -325,16 +373,40 @@ public class DijkstraTokenAI extends TokenAI {
 		return this.board[limit(x)][limit(y)];
 	}
 	
+	private boolean inLimit(int num) {
+		return num >= 0 && num < Constants.DIM;
+	}
+	
+	private boolean inLimit(float num) {
+		return num >= 0 && num < Constants.DIM;
+	}
+	
+	private boolean inLimit(int x, int y) {
+		return inLimit(x) && inLimit(y);
+	}
+	
+	private boolean inLimit(float x, float y) {
+		return inLimit(x) && inLimit(y);
+	}
+	
 	private int limit(float value) {
 	    return (int)Math.max(0, Math.min(value, Constants.DIM));
 	}
 	
 	private float getX() {
-		return this.tokens[this.playerNum][this.tokenNum][0];
+		return getX(this.playerNum, this.tokenNum);
 	}
 	
 	private float getY() {
-		return this.tokens[this.playerNum][this.tokenNum][1];
+		return getY(this.playerNum, this.tokenNum);
+	}
+	
+	private float getX(int playerNum, int tokenNum) {
+		return this.tokens[playerNum][tokenNum][0];
+	}
+	
+	private float getY(int playerNum, int tokenNum) {
+		return this.tokens[playerNum][tokenNum][1];
 	}
 	
 	private void getDir(float[] xy, float xFrom, float yFrom, float xTo, float yTo) {
@@ -349,8 +421,8 @@ public class DijkstraTokenAI extends TokenAI {
 					continue;
 				}
 				
-				if ((int)this.tokens[i][j][0] == (int)x  &&
-				    (int)this.tokens[i][j][1] == (int)y) {
+				if ((int)getX(i, j) == (int)x  &&
+				    (int)getY(i, j) == (int)y) {
 					return true;
 				}
 			}

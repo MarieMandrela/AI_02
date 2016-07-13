@@ -3,7 +3,7 @@ package AI;
 public abstract class TokenAI implements Runnable{
 	
 	public static TokenAI getTokenAI(String type, int playerNum, int tokenNum, int[][] board, 
-			float[][][] tokens, float[][] directions, int[] scores, boolean[][][][] adjacency) {
+			float[][][] tokens, float[][] directions, int[] scores, boolean[][][][] adjacency, int[][] targets) {
 		if (type == null) {
 			return null;
 		}
@@ -14,7 +14,7 @@ public abstract class TokenAI implements Runnable{
 			return new LookaheadTokenAI(playerNum, tokenNum, board, tokens, directions, scores, adjacency);
 		}
 		if (type.equalsIgnoreCase(Constants.DIJK)) {
-			return new DijkstraTokenAI(playerNum, tokenNum, board, tokens, directions, scores, adjacency);
+			return new DijkstraTokenAI(playerNum, tokenNum, board, tokens, directions, scores, adjacency, targets);
 		}
 		
 		return null;

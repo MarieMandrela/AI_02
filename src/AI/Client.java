@@ -27,6 +27,7 @@ public class Client implements Runnable {
 	private boolean[][][][] adjacency = new boolean[31][31][31][31];
 	private float[][][] tokens = new float[4][3][2];
 	private float[][] directions = new float[3][2];
+	private int[][] targets = new int[3][2];
 	private NetworkClient network;
 	
 	public Client(String teamName, String[] ais) {
@@ -55,9 +56,9 @@ public class Client implements Runnable {
 	} 
 	
 	private void initTokenAI() {
-		TokenAI one = TokenAI.getTokenAI(this.ais[0], playerNum, 0, board, tokens, directions, scores, adjacency);
-		TokenAI two = TokenAI.getTokenAI(this.ais[1], playerNum, 1, board, tokens, directions, scores, adjacency);
-		TokenAI three =  TokenAI.getTokenAI(this.ais[2], playerNum, 2, board, tokens, directions, scores, adjacency);
+		TokenAI one = TokenAI.getTokenAI(this.ais[0], playerNum, 0, board, tokens, directions, scores, adjacency, targets);
+		TokenAI two = TokenAI.getTokenAI(this.ais[1], playerNum, 1, board, tokens, directions, scores, adjacency, targets);
+		TokenAI three =  TokenAI.getTokenAI(this.ais[2], playerNum, 2, board, tokens, directions, scores, adjacency, targets);
 		Thread t_one = new Thread(one);
 		Thread t_two = new Thread(two);
 		Thread t_three = new Thread(three);
