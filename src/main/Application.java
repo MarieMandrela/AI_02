@@ -19,10 +19,10 @@ public class Application {
 			String[] random = {Constants.RNG, Constants.RNG, Constants.RNG};
 			String[] lookahead = {Constants.LOOK, Constants.LOOK, Constants.LOOK};
 			String[] dijkstra = {Constants.DIJK, Constants.DIJK, Constants.DIJK};
-			Client one = new Client("one", random);
-			Client two = new Client("two", random);
+			Client one = new Client("one", lookahead);
+			Client two = new Client("two", lookahead);
 			Client three = new Client("dijkstra", dijkstra);
-			Client four = new Client("lookahead", lookahead);
+			Client four = new Client("three", lookahead);
 			
 			Thread t_one = new Thread(one);
 			Thread t_two = new Thread(two);

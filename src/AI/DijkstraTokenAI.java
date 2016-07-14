@@ -2,8 +2,6 @@ package AI;
 
 import java.util.Random;
 
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
-
 public class DijkstraTokenAI extends TokenAI {
 	
 	private int playerNum;
@@ -11,13 +9,12 @@ public class DijkstraTokenAI extends TokenAI {
 	
 	private boolean[][][][] adjacency = new boolean[Constants.DIM][Constants.DIM][Constants.DIM][Constants.DIM];
 	private float[][] influence = new float[Constants.DIM][Constants.DIM];
-	private float[][] half_infuence = new float[Constants.DIM / 2][Constants.DIM / 2];
-	private long targetUpdateRate = 5000;
+	private long targetUpdateRate = 10000;
 	private float[][] value = new float[Constants.DIM][Constants.DIM];
 	private boolean[][] reachable = new boolean[Constants.DIM][Constants.DIM];
 	
 	private long gameStart;
-	private long startegySwitchTime = 30000;
+	private long startegySwitchTime = 60000;
 	
 	private Random rnd;
 	
@@ -40,7 +37,7 @@ public class DijkstraTokenAI extends TokenAI {
 		this.adjacency = adjacency;
 		this.targets = targets;
 		this.rnd = new Random();
-		this.rnd.setSeed(10);
+		this.rnd.setSeed(10 + this.playerNum);
 		
 		initReachable();
 		setInfluence();
@@ -55,9 +52,8 @@ public class DijkstraTokenAI extends TokenAI {
 			for (int j = 0; j < Constants.DIM; j++) {
 				float field = getBoard(i, j);
 				if (!this.reachable[i][j] || field == Constants.WALL) {
-					newVal = -10;
-				}
-				else if (field == this.playerNum) {
+					newVal = -2;
+				} else if (field == this.playerNum) {
 					newVal = -1;
 				} else if (field >= 0 && field <= 3) {
 					newVal = enemyFieldVal;
@@ -85,20 +81,6 @@ public class DijkstraTokenAI extends TokenAI {
 				continue;
 			}
 			applyGaussInfluence(getTargetX(i), getTargetY(i));
-		}
-		
-		for (int i = 0; i < Constants.DIM - 1; i++) {
-			for (int j = 0; j < Constants.DIM - 1; j++) {
-				this.half_infuence[i / 2][j / 2] = 0;
-			}
-		}
-		
-		for (int i = 0; i < Constants.DIM - 1; i++) {
-			for (int j = 0; j < Constants.DIM - 1; j++) {
-				if (this.influence[i][j] != -10) {
-					this.half_infuence[i / 2][j / 2] += this.influence[i][j];
-				}
-			}
 		}
 	}
 	
@@ -164,7 +146,6 @@ public class DijkstraTokenAI extends TokenAI {
 			if (System.currentTimeMillis() - lastTarget >= this.targetUpdateRate ||	hitTarget()) {
 				findTarget(target);
 				setTarget(target[0], target[1]);
-				System.out.println("Token " + this.tokenNum + " going to " + target[0] + "," + target[1]);
 				lastTarget = System.currentTimeMillis();
 			}
 				
@@ -182,7 +163,7 @@ public class DijkstraTokenAI extends TokenAI {
 	
 	private void setTarget(int x, int y) {
 		this.targets[this.tokenNum][0] = x;
-		this.targets[this.tokenNum][1] = x;
+		this.targets[this.tokenNum][1] = y;
 	}
 	
 	private int getTargetX(int tokenNum) {
@@ -202,7 +183,7 @@ public class DijkstraTokenAI extends TokenAI {
 	}
 	
 	private boolean hitTarget() {
-		return (Math.abs(getTargetX() - getX()) + Math.abs(getTargetY() - getY())) < 3;
+		return (Math.abs(getTargetX() - getX()) + Math.abs(getTargetY() - getY())) < 2;
 	}
 	
 	private void findTarget(int[] xy) {
@@ -211,27 +192,43 @@ public class DijkstraTokenAI extends TokenAI {
 	}
 	
 	private void getMaxInfluence(int[] xy) {
-		float max = -10;
+		float max = -100;
+		int scale = 3 + this.playerNum;
+		float sum = 0;
+		int x = -1;
+		int y = -1;
 		
-		for (int i = 0; i < Constants.DIM / 2 - 1; i++) {
-			for (int j = 0; j < Constants.DIM / 2 - 1; j++) {
-				if (this.half_infuence[i][j] > max ||
-					(this.half_infuence[i][j] == max && rnd.nextBoolean())) {
-					max = this.half_infuence[i][j];
-					xy[0] = i * 2;
-					xy[1] = j * 2;
+		for (int i = 0; i < Constants.DIM - scale; i++) {
+			for (int j = 0; j < Constants.DIM - scale; j++) {
+				
+				for (int l = 0; l < scale; l++) {
+					for (int k = 0; k < scale; k++) {
+						sum += this.influence[i + l][j + k];
+					}
 				}
+	
+				if (this.reachable[i][j] &&
+					(sum > max ||
+					(sum == max && rnd.nextBoolean()))) {
+					max = sum;
+					x = i;
+					y = j;
+				}
+				
+				sum = 0;
 			}
 		}
 		
-		max = -10;
+		max = -100;
 		
-		for (int i = 0; i < 2; i++) {
-			for (int j = 0; j < 2; j++) {
-				if (this.influence[xy[0] + i][xy[1] + j] > max) {
-					max = this.influence[xy[0] + i][xy[1] + j];
-					xy[0] += i;
-					xy[1] += j;
+		for (int l = 0; l < scale; l++) {
+			for (int k = 0; k < scale; k++) {
+				if (this.reachable[x + l][y + k] &&
+					(this.influence[x + l][y + k] > max ||
+					(this.influence[x + l][y + k] == max && rnd.nextBoolean()))) {
+					max = this.influence[x + l][y + k];
+					xy[0] = x + l;
+					xy[1] = y + k;
 				}
 			}
 		}
