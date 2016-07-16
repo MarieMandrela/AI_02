@@ -9,12 +9,12 @@ public class DijkstraTokenAI extends TokenAI {
 	
 	private boolean[][][][] adjacency = new boolean[Constants.DIM][Constants.DIM][Constants.DIM][Constants.DIM];
 	private float[][] influence = new float[Constants.DIM][Constants.DIM];
-	private long targetUpdateRate = 10000;
+	private int targetUpdateRate = 5;
 	private float[][] value = new float[Constants.DIM][Constants.DIM];
 	private boolean[][] reachable = new boolean[Constants.DIM][Constants.DIM];
 	
 	private long gameStart;
-	private long startegySwitchTime = 60000;
+	private long startegySwitchTime = 40000;
 	
 	private Random rnd;
 	
@@ -58,7 +58,7 @@ public class DijkstraTokenAI extends TokenAI {
 				} else if (field >= 0 && field <= 3) {
 					newVal = enemyFieldVal;
 				} else if (field == Constants.EMPTY) {
-					newVal = 1;
+					newVal = 2;
 				}
 				
 				this.influence[i][j] = newVal;
@@ -110,9 +110,13 @@ public class DijkstraTokenAI extends TokenAI {
 		}
 	}
 	
+	private boolean gameHasStarted() {
+		return this.scores[0] > 0;
+	}
+	
 	private void setGameTimer() {
-		if (gameStart == 0 && scores[0] > 0) {
-			gameStart = System.currentTimeMillis();
+		if (this.gameStart == 0 && this.scores[0] > 0) {
+			this.gameStart = System.currentTimeMillis();
 		}
 	}
 	
@@ -133,26 +137,44 @@ public class DijkstraTokenAI extends TokenAI {
 			e.printStackTrace();
 		}
 	}
+	
+	private int getUpdateSpeed() {
+		if (this.tokenNum == 1) {
+			return 400 * this.targetUpdateRate;
+    	}
+		if (this.tokenNum == 2) {
+			return 800 * this.targetUpdateRate;
+    	}
+    	if (this.tokenNum == 0) {
+    		return 250 * this.targetUpdateRate;
+    	}
+    	
+    	return 0;
+	}
 
 	@Override
 	public void run() {
 		float[] dir = new float[2];
 		int[] target = new int[2];
-		long lastTarget = 0;
+		long lastTargetTime = 0;
 		
 		while (true) {
 			setGameTimer();
-
-			if (System.currentTimeMillis() - lastTarget >= this.targetUpdateRate ||	hitTarget()) {
-				findTarget(target);
-				setTarget(target[0], target[1]);
-				lastTarget = System.currentTimeMillis();
-			}
-				
-			findDirVector(limit(getX()), limit(getY()), target[0], target[1], dir);
-			setDirections(dir[0], dir[1]);
 			
-			sleep();
+			if (gameHasStarted()) {
+				if (System.currentTimeMillis() - lastTargetTime >= getUpdateSpeed() ||	hitTarget()) {
+					findTarget(target);
+					setTarget(target[0], target[1]);
+					lastTargetTime = System.currentTimeMillis();
+					
+					System.out.println(this.tokenNum + " " + getTargetX() + " , " + getTargetY());
+				}
+					
+				findDirVector(limit(getX()), limit(getY()), target[0], target[1], dir);
+				setDirections(dir[0], dir[1]);
+				
+				sleep();			
+			}
 		}
 	}
 	
@@ -197,19 +219,23 @@ public class DijkstraTokenAI extends TokenAI {
 		float sum = 0;
 		int x = -1;
 		int y = -1;
+		int maxX = Constants.DIM - scale;
+		int maxY = Constants.DIM - scale;
+		int startX = 0;
+		int startY = 0;
 		
-		for (int i = 0; i < Constants.DIM - scale; i++) {
-			for (int j = 0; j < Constants.DIM - scale; j++) {
+		for (int i = startX; i < maxX; i++) {
+			for (int j = startY; j < maxY; j++) {
 				
 				for (int l = 0; l < scale; l++) {
 					for (int k = 0; k < scale; k++) {
-						sum += this.influence[i + l][j + k];
+						if (this.influence[i + l][j + k] > -2) {
+							sum += this.influence[i + l][j + k];
+						}
 					}
 				}
 	
-				if (this.reachable[i][j] &&
-					(sum > max ||
-					(sum == max && rnd.nextBoolean()))) {
+				if (this.reachable[i][j] && sum > max) {
 					max = sum;
 					x = i;
 					y = j;
@@ -224,8 +250,7 @@ public class DijkstraTokenAI extends TokenAI {
 		for (int l = 0; l < scale; l++) {
 			for (int k = 0; k < scale; k++) {
 				if (this.reachable[x + l][y + k] &&
-					(this.influence[x + l][y + k] > max ||
-					(this.influence[x + l][y + k] == max && rnd.nextBoolean()))) {
+					this.influence[x + l][y + k] > max) {
 					max = this.influence[x + l][y + k];
 					xy[0] = x + l;
 					xy[1] = y + k;
@@ -435,10 +460,10 @@ public class DijkstraTokenAI extends TokenAI {
 	 */
 	private float evaluateField(float x, float y) {
 		int field = getBoard(x, y);
-		float val = 2;
+		float val = 1;
 		
 		if (field >= 0 && field <= 3 && field != this.playerNum) {
-			val = 1;
+			val = 2;
 		}
 		if (field == this.playerNum) {
 			val = 6;
